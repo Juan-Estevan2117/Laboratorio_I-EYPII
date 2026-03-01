@@ -93,3 +93,39 @@ df_rendimiento$trabaja[df_rendimiento$trabaja == "no"] <- 0
 # Modalidad
 # Normalizamos
 df_rendimiento$modalidad <- tolower(df_rendimiento$modalidad)
+
+# -------------------------------------------------------------------------
+# Imputacion por columnas
+# -------------------------------------------------------------------------
+col_nul <- colMeans(is.na(df_rendimiento)) * 100
+col_nul
+
+# Creando una copia del df
+
+imp_df_rendimiento <- df_rendimiento
+
+# Verificar porcentajes del df imputado
+imp_col_nul <- colMeans(is.na(imp_df_rendimiento)) * 100
+imp_col_nul
+
+# -------------------------------------------------------------------------
+# Ingresos familiares: Imputacion por media
+# -------------------------------------------------------------------------
+
+filter(df_rendimiento, is.na(ingresos_familiares))
+
+imp_df_rendimiento$ingresos_familiares[is.na(imp_df_rendimiento$ingresos_familiares)] <- 
+  median(imp_df_rendimiento$ingresos_familiares, na.rm = TRUE)
+
+# -------------------------------------------------------------------------
+# Horas de sueño: Imputacion por media
+# -------------------------------------------------------------------------
+
+filter(df_rendimiento, is.na(horas_sueno))
+
+imp_df_rendimiento$horas_sueno[is.na(imp_df_rendimiento$horas_sueno)] <- 
+  median(imp_df_rendimiento$horas_sueno, na.rm = TRUE)
+
+# -------------------------------------------------------------------------
+# Horas de sueño: Imputacion por media
+# -------------------------------------------------------------------------

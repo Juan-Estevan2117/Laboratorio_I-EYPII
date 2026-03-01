@@ -94,6 +94,35 @@ sum((df_rendimiento$promedio_previo < 0 | df_rendimiento$promedio_previo > 10) &
 
 df_rendimiento %>% summarise(min = min(horas_sueno, na.rm = TRUE), max = max(horas_sueno, na.rm = TRUE))
 
+# Viendo que contextualmente no es posible dormir EN PROMEDIO 22 horas.
+# Basados en la regla del 1.5IQR para saber si n valores son outliers o errores
+# dentro de los datos. 
+
+# Calculo del Q3
+q3 <- quantile(df_rendimiento$horas_sueno, 0.75, na.rm = TRUE)
+
+iqr = IQR(df_rendimiento$horas_sueno, na.rm = TRUE)
+
+# Regla del 1.5IQR
+regla <- q3 + 1.5*iqr
+regla # 8.43285 -> Todo valor por encima es considerado un error de los datos
+
+# -------------------------------------------------------------------------
+# Toma de decision con respecto a la IMPUTACION
+
+ggplot(df_rendimiento, aes(x = horas_sueno)) + geom_histogram(bins = 60, fill = "coral", color = "black") + 
+  theme_minimal() + labs(x = "Horas de sueño - h/dias", y = "Frecuencia") + scale_x_continuous(breaks = seq(0, 20, by = 1))
+
+ggplot(df_rendimiento, aes(y = horas_sueno)) + geom_boxplot(fill = "pink", color = "red", width = 0.05) + 
+  theme(axis.title.y = element_text(size = 15), axis.text.y = element_text(size = 15), axis.text.x = element_blank(), axis.ticks.x = element_blank()) + 
+  labs(y = "Horas de sueño - h/dia") 
+
+# Media 
+mean(df_rendimiento$horas_sueno, na.rm = TRUE)
+
+# Mediana
+median(df_rendimiento$horas_sueno, na.rm = TRUE)
+
 # -------------------------------------------------------------------------
 # >>>> Columna edad<<<<<
 # -------------------------------------------------------------------------
@@ -123,6 +152,21 @@ df_rendimiento %>% summarise(min = min(uso_redes, na.rm = TRUE), max = max(uso_r
 # -------------------------------------------------------------------------
 
 df_rendimiento %>% summarise(min = min(ingresos_familiares, na.rm = TRUE), max = max(ingresos_familiares, na.rm = TRUE))
+
+# Toma de decision con respecto a la IMPUTACION
+
+ggplot(df_rendimiento, aes(x = estres)) + geom_histogram(bins = 60, fill = "coral", color = "black") + 
+  theme_minimal() + labs(x = "$ Ingresos familiares", y = "Frecuencia")
+
+ggplot(df_rendimiento, aes(y = ingresos_familiares)) + geom_boxplot(fill = "pink", color = "red", width = 0.05) + 
+  theme(axis.title.y = element_text(size = 15), axis.text.y = element_text(size = 15), axis.text.x = element_blank(), axis.ticks.x = element_blank()) + 
+  labs(y = "$USD/mes Ingresos Familiares")
+
+# Media 
+mean(df_rendimiento$ingresos_familiares, na.rm = TRUE)
+
+# Mediana
+median(df_rendimiento$ingresos_familiares, na.rm = TRUE)
 
 # -------------------------------------------------------------------------
 # >>>> Columna genero<<<<<
