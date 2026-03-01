@@ -4,5 +4,6 @@
 .Ruserdata
 data/raw/*
 !data/raw/.gitkeep
+!figuras/.gitkeep
 GEMINI.md
 *.pdf
