@@ -15,7 +15,6 @@ str(df_rendimiento) # -> Se requiere normalizacion de los datos.
 head(df_rendimiento)
 tail(df_rendimiento)
 
-
 # -------------------------------------------------------------------------
 # >>>> Columna anio: <<<<
 # -------------------------------------------------------------------------
@@ -59,11 +58,35 @@ df_rendimiento %>% summarise(min = min(horas_estudio, na.rm = TRUE), max = max(h
 
 df_rendimiento %>% summarise(min = min(asistencia, na.rm = TRUE), max = max(asistencia, na.rm = TRUE))
 
+# Revisamos que cantidad de registros tenemos fuera del rango
+sum((df_rendimiento$asistencia < 0 | df_rendimiento$asistencia > 100) &
+      !is.na(df_rendimiento$asistencia))
+
+# Cantidad de registros nulos
+sum(is.na(df_rendimiento$asistencia))
+
 # -------------------------------------------------------------------------
 # >>>> Columna promedio_previo<<<<<
 # -------------------------------------------------------------------------
 
+# Como no queda clara la escala (Ya que pusiste ejemplo de 0 a 10 de forma arbitraria)
 df_rendimiento %>% summarise(min = min(promedio_previo, na.rm = TRUE), max = max(promedio_previo, na.rm = TRUE))
+
+# quisimos ver la distribucion de los datos con un histograma
+ggplot(df_rendimiento, aes(x = promedio_previo)) + geom_histogram(bins = 60, fill = "coral", color = "black") + 
+  theme_minimal() + labs(x = "Promedio Previo", y = "Frecuencia") + scale_x_continuous(limits = c(0, 15))
+
+# Concluimos que todos los valores se pueden considerar dentro de lo "normal"
+# Por tanto el rango de la variable "promedio_previo" [0, 15]
+
+# Si definimos una escala de [0, 10] la cantidad de datos nos llevaria a tener
+# 192 nulos adicionales a los nulos que ya teniamos
+
+# Cantidad de nulos
+sum(is.na(df_rendimiento$promedio_previo)) #74 nulos
+
+sum((df_rendimiento$promedio_previo < 0 | df_rendimiento$promedio_previo > 10) &
+      !is.na(df_rendimiento$promedio_previo)) #192 nulos
 
 # -------------------------------------------------------------------------
 # >>>> Columna horas_sueno<<<<<

@@ -27,11 +27,10 @@ df_rendimiento$horas_estudio[df_rendimiento$horas_estudio < 0 | df_rendimiento$h
 
 df_rendimiento$asistencia[df_rendimiento$asistencia < 0 | df_rendimiento$asistencia > 100] <- NA
 
-
 # Promedio previo
 # Rango segun diccionario de variables [0, 10]
 
-df_rendimiento$promedio_previo[df_rendimiento$promedio_previo < 0 | df_rendimiento$promedio_previo > 10] <- NA
+df_rendimiento$promedio_previo[df_rendimiento$promedio_previo < 0 | df_rendimiento$promedio_previo > 15] <- NA
 
 # Horas de sueño
 # aunque es seria tremendo outlier, debemos considerar un rango de [0, 24]
@@ -61,7 +60,6 @@ df_rendimiento$genero <- tolower(df_rendimiento$genero)
 
 df_rendimiento$genero[df_rendimiento$genero == "female"] <- 1
 df_rendimiento$genero[df_rendimiento$genero == "male"] <- 0
-
 
 # Carrera
 # normalizamos
@@ -95,6 +93,3 @@ df_rendimiento$trabaja[df_rendimiento$trabaja == "no"] <- 0
 # Modalidad
 # Normalizamos
 df_rendimiento$modalidad <- tolower(df_rendimiento$modalidad)
-
-# 
-
