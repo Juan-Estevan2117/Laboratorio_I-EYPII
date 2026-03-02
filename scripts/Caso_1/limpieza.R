@@ -178,3 +178,6 @@ write.csv(eda_df_rendimiento, file = here("data", "processed", "rendimiento_impu
 stripplot(imputacion, pch = 20, cex = 1.2)
 
 densityplot(imputacion)
+
+# Guardar objeto para usarlo en el otro archivo
+saveRDS(imputacion, "imputacion.rds")

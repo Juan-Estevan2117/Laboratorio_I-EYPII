@@ -195,7 +195,14 @@ modelo_2 = lm(puntaje_final ~ horas_estudio + asistencia + promedio_previo +
                 interaccion_estresvssemestre + interaccion_asistenciavssemestre, 
               data = df_anova_rendimiento)
 
+modelo_2_test = lm(puntaje_final ~ horas_estudio + asistencia + promedio_previo + 
+                estres + (asistencia * modalidad) + (asistencia * trabaja) + (promedio_previo * modalidad) +
+                (promedio_previo * acceso_internet) + (estres * genero) + 
+                (estres*trabaja) + (estres*modalidad) + (horas_estudio * trabaja) + 
+                (estres * semestre) + (asistencia*semestre), data = df_anova_rendimiento)
+
 summary(modelo_2)
+summary(modelo_2_test)
 
 # -------------------------------------------------------------------------
 # Variables politomicas
@@ -261,5 +268,30 @@ ggplot(df_anova_rendimiento, aes(x = asistencia, y = puntaje_final, color = as.f
 # -------------------------------------------------------------------------
 # MODELO CON LAS INTERACCIONES POLITOMICAS
 # -------------------------------------------------------------------------
+
+modelo_3 = lm(puntaje_final ~ horas_estudio + asistencia + promedio_previo + 
+                estres + (horas_estudio * carrera) + (estres * carrera)+ 
+                (uso_redes * carrera) + (asistencia * carrera) + 
+                (promedio_previo * anio) + (horas_estudio * anio) + 
+                (estres * anio) + (asistencia * anio), data = df_anova_rendimiento)
+
+summary(modelo_3)
+
+# -------------------------------------------------------------------------
+# Modelo con todas las interacciones
+# -------------------------------------------------------------------------
+
+# Traemos el objeto de imputacion del otro archivo
+imputacion <- readRDS("imputacion.rds")
+
+modelo_final <- with(imputacion, lm(puntaje_final ~ horas_estudio + asistencia + 
+                                    promedio_previo + estres + (asistencia * modalidad) +
+                                    (horas_estudio * trabaja) + (horas_estudio * anio) +
+                                    (horas_estudio * carrera)))
+
+# Agrupamos los resultados
+resultado <- pool(modelo_final)
+options(scipen = 0)
+summary(resultado)
 
 
