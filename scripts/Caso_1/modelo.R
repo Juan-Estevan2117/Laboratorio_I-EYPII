@@ -156,10 +156,110 @@ ggplot(df_anova_rendimiento, aes(x = asistencia, y = puntaje_final, color = as.f
   theme_minimal()
 
 # -------------------------------------------------------------------------
-# MODELO CON LAS INTERACCIONES
+# MODELO CON LAS INTERACCIONES DICOTOMICAS
 # -------------------------------------------------------------------------
 
 # Definimos las interacciones
+interaccion_asistenciavsmodalidad = df_anova_rendimiento$asistencia * df_anova_rendimiento$modalidad
+interaccion_asistenciavstrabaja = df_anova_rendimiento$asistencia * df_anova_rendimiento$trabaja
+interaccion_promediopreviovsmodalidad = df_anova_rendimiento$promedio_previo * df_anova_rendimiento$modalidad
+interaccion_promediopreviovsaccesointernet = df_anova_rendimiento$promedio_previo * df_anova_rendimiento$acceso_internet
+interaccion_estresvsgenero = df_anova_rendimiento$estres * df_anova_rendimiento$genero
+interaccion_estresvstrabajo = df_anova_rendimiento$estres * df_anova_rendimiento$trabaja
+interaccion_estresvsmodalidad = df_anova_rendimiento$estres * df_anova_rendimiento$modalidad
+interaccion_horasestudiovstrabaja = df_anova_rendimiento$horas_estudio * df_anova_rendimiento$trabaja
+interaccion_estresvssemestre = df_anova_rendimiento$estres * df_anova_rendimiento$semestre
+interaccion_asistenciavssemestre = df_anova_rendimiento$asistencia * df_anova_rendimiento$semestre
 
+# La añadimos al dataframe
+df_anova_rendimiento$interaccion_asistenciavsmodalidad = interaccion_asistenciavsmodalidad
+df_anova_rendimiento$interaccion_asistenciavstrabaja = interaccion_asistenciavstrabaja
+df_anova_rendimiento$interaccion_promediopreviovsmodalidad = interaccion_promediopreviovsmodalidad
+df_anova_rendimiento$interaccion_promediopreviovsaccesointernet = interaccion_promediopreviovsaccesointernet
+df_anova_rendimiento$interaccion_estresvsgenero = interaccion_estresvsgenero
+df_anova_rendimiento$interaccion_estresvstrabajo = interaccion_estresvstrabajo
+df_anova_rendimiento$interaccion_estresvsmodalidad = interaccion_estresvsmodalidad
+df_anova_rendimiento$interaccion_horasestudiovstrabaja = interaccion_horasestudiovstrabaja
+df_anova_rendimiento$interaccion_estresvssemestre = interaccion_estresvssemestre
+df_anova_rendimiento$interaccion_asistenciavssemestre = interaccion_asistenciavssemestre
+
+# Modelo 2: con las variables dicotomicas
+
+modelo_2 = lm(puntaje_final ~ horas_estudio + asistencia + promedio_previo + 
+                estres + interaccion_asistenciavsmodalidad + 
+                interaccion_asistenciavstrabaja + 
+                interaccion_promediopreviovsmodalidad + 
+                interaccion_promediopreviovsaccesointernet + 
+                interaccion_estresvsgenero + interaccion_estresvstrabajo + 
+                interaccion_estresvsmodalidad + interaccion_horasestudiovstrabaja + 
+                interaccion_estresvssemestre + interaccion_asistenciavssemestre, 
+              data = df_anova_rendimiento)
+
+summary(modelo_2)
+
+# -------------------------------------------------------------------------
+# Variables politomicas
+# -------------------------------------------------------------------------
+
+# Implementaremos la misma logica que usamos para las dicotomicas, usando las
+# variables que sospechemos puedan tener inflluencia por la categoria
+
+# HORAS DE ESTUDIO VS CARRERA: Si hay
+ggplot(df_anova_rendimiento, aes(x = horas_estudio, y = puntaje_final, color = as.factor(carrera))) +
+  geom_point(alpha = 0.5) +
+  geom_smooth(method = "lm", se = FALSE) +  # Traza las líneas de regresión
+  theme_minimal()
+
+# ESTRES VS CARRERA: Si hay
+ggplot(df_anova_rendimiento, aes(x = estres, y = puntaje_final, color = as.factor(carrera))) +
+  geom_point(alpha = 0.5) +
+  geom_smooth(method = "lm", se = FALSE) +  # Traza las líneas de regresión
+  theme_minimal()
+
+# PROMEDIO PREVIO VS CARRERA: No hay
+ggplot(df_anova_rendimiento, aes(x = promedio_previo, y = puntaje_final, color = as.factor(carrera))) +
+  geom_point(alpha = 0.5) +
+  geom_smooth(method = "lm", se = FALSE) +  # Traza las líneas de regresión
+  theme_minimal()
+
+# USO REDES VS CARRERA: Si hay
+ggplot(df_anova_rendimiento, aes(x = uso_redes, y = puntaje_final, color = as.factor(carrera))) +
+  geom_point(alpha = 0.5) +
+  geom_smooth(method = "lm", se = FALSE) +  # Traza las líneas de regresión
+  theme_minimal()
+
+# ASISTENCIA VS CARRERA: Si hay
+ggplot(df_anova_rendimiento, aes(x = asistencia, y = puntaje_final, color = as.factor(carrera))) +
+  geom_point(alpha = 0.5) +
+  geom_smooth(method = "lm", se = FALSE) +  # Traza las líneas de regresión
+  theme_minimal()
+
+# PROMEDIO PREVIO VS AÑO: Si hay
+ggplot(df_anova_rendimiento, aes(x = promedio_previo, y = puntaje_final, color = as.factor(anio))) +
+  geom_point(alpha = 0.5) +
+  geom_smooth(method = "lm", se = FALSE) +  # Traza las líneas de regresión
+  theme_minimal()
+
+# HORAS_ESTUDIO VS AÑO: Si hay
+ggplot(df_anova_rendimiento, aes(x = horas_estudio, y = puntaje_final, color = as.factor(anio))) +
+  geom_point(alpha = 0.5) +
+  geom_smooth(method = "lm", se = FALSE) +  # Traza las líneas de regresión
+  theme_minimal()
+
+# ESTRES VS AÑO: Si hay
+ggplot(df_anova_rendimiento, aes(x = estres, y = puntaje_final, color = as.factor(anio))) +
+  geom_point(alpha = 0.5) +
+  geom_smooth(method = "lm", se = FALSE) +  # Traza las líneas de regresión
+  theme_minimal()
+
+# ASISTENCIA VS AÑO: Si hay
+ggplot(df_anova_rendimiento, aes(x = asistencia, y = puntaje_final, color = as.factor(anio))) +
+  geom_point(alpha = 0.5) +
+  geom_smooth(method = "lm", se = FALSE) +  # Traza las líneas de regresión
+  theme_minimal()
+
+# -------------------------------------------------------------------------
+# MODELO CON LAS INTERACCIONES POLITOMICAS
+# -------------------------------------------------------------------------
 
 

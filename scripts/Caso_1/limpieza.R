@@ -15,6 +15,10 @@ df_rendimiento <- read.csv(here("data", "processed", "rendimiento_2021-2025_sem1
 # Semestre
 df_rendimiento$semestre <- tolower(df_rendimiento$semestre)
 
+# dicotomizar
+df_rendimiento$semestre[df_rendimiento$semestre == "sem1"] <- 0
+df_rendimiento$semestre[df_rendimiento$semestre == "sem2"] <- 1
+
 # Como son horas de estudio semanales el rango fisicamente posible es [0, 168]
 # Marcamos como NAN los valores fuera del rango
 
