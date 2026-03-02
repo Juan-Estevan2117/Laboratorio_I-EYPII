@@ -1,3 +1,4 @@
+library(mice)
 
 df_rendimiento <- read.csv(here("data", "processed", "rendimiento_2021-2025_sem1&sem2.csv"))
 
@@ -33,9 +34,9 @@ df_rendimiento$asistencia[df_rendimiento$asistencia < 0 | df_rendimiento$asisten
 df_rendimiento$promedio_previo[df_rendimiento$promedio_previo < 0 | df_rendimiento$promedio_previo > 15] <- NA
 
 # Horas de sueño
-# aunque es seria tremendo outlier, debemos considerar un rango de [0, 24]
+# Basado en el EDA, concluimos que un rango logico 
 
-df_rendimiento$horas_sueno[df_rendimiento$horas_sueno < 0 | df_rendimiento$horas_sueno > 24] <- NA
+df_rendimiento$horas_sueno[df_rendimiento$horas_sueno < 3 | df_rendimiento$horas_sueno > 9] <- NA
 
 # Estres
 # El rango puede plantearse en una escala de [0, 10]
@@ -94,6 +95,10 @@ df_rendimiento$trabaja[df_rendimiento$trabaja == "no"] <- 0
 # Normalizamos
 df_rendimiento$modalidad <- tolower(df_rendimiento$modalidad)
 
+# Dicotomizamos
+df_rendimiento$modalidad[df_rendimiento$modalidad == "presencial"] <- 1
+df_rendimiento$modalidad[df_rendimiento$modalidad == "virtual"] <- 0
+
 # -------------------------------------------------------------------------
 # Imputacion por columnas
 # -------------------------------------------------------------------------
@@ -109,7 +114,7 @@ imp_col_nul <- colMeans(is.na(imp_df_rendimiento)) * 100
 imp_col_nul
 
 # -------------------------------------------------------------------------
-# Ingresos familiares: Imputacion por media
+# Ingresos familiares: Imputacion por mediana
 # -------------------------------------------------------------------------
 
 filter(df_rendimiento, is.na(ingresos_familiares))
@@ -118,7 +123,7 @@ imp_df_rendimiento$ingresos_familiares[is.na(imp_df_rendimiento$ingresos_familia
   median(imp_df_rendimiento$ingresos_familiares, na.rm = TRUE)
 
 # -------------------------------------------------------------------------
-# Horas de sueño: Imputacion por media
+# Horas de sueño: Imputacion por mediana
 # -------------------------------------------------------------------------
 
 filter(df_rendimiento, is.na(horas_sueno))
@@ -127,5 +132,45 @@ imp_df_rendimiento$horas_sueno[is.na(imp_df_rendimiento$horas_sueno)] <-
   median(imp_df_rendimiento$horas_sueno, na.rm = TRUE)
 
 # -------------------------------------------------------------------------
-# Horas de sueño: Imputacion por media
+# Uso de redes: Imputacion por mediana
 # -------------------------------------------------------------------------
+
+filter(df_rendimiento, is.na(uso_redes))
+
+imp_df_rendimiento$uso_redes[is.na(imp_df_rendimiento$uso_redes)] <- 
+  median(imp_df_rendimiento$uso_redes, na.rm = TRUE)
+
+
+# -------------------------------------------------------------------------
+# Imputacion por MICE (Imputacion Multiple por ecuaciones concatenadas)
+# -------------------------------------------------------------------------
+
+# Definimos como factor TODAS las variables categoricas
+# Para que no se traten como numericas o caracteres y se aplique regresion logistica
+
+imp_df_rendimiento$anio <- as.factor(imp_df_rendimiento$anio)
+imp_df_rendimiento$semestre <- as.factor(imp_df_rendimiento$semestre)
+imp_df_rendimiento$genero <- as.factor(imp_df_rendimiento$genero)
+imp_df_rendimiento$carrera <- as.factor(imp_df_rendimiento$carrera)
+imp_df_rendimiento$acceso_internet <- as.factor(imp_df_rendimiento$acceso_internet)
+imp_df_rendimiento$trabaja <- as.factor(imp_df_rendimiento$trabaja)
+imp_df_rendimiento$modalidad <- as.factor(imp_df_rendimiento$modalidad)
+
+# creamos el objeto donde se haran las imputaciones
+imputacion <- mice(imp_df_rendimiento, m = 5, maxit = 10, method = NULL, seed = 13102005)
+
+# Verificamos que metodos de imputacion se usaron para cada columnas
+imputacion$method
+
+# Extraemos el primer dataframe creado para poder hacer analisis de varianza
+eda_df_rendimiento <- complete(imputacion, action = 1)
+
+# Exportamos el dataframe para el EDA - ANOVA
+write.csv(eda_df_rendimiento, file = here("data", "processed", "rendimiento_imputado.csv"), row.names = FALSE)
+
+# Revision de los graficos para validar que los datos imputados si se hayan
+# adaptado a los datos originales opservados
+
+stripplot(imputacion, pch = 20, cex = 1.2)
+
+densityplot(imputacion)

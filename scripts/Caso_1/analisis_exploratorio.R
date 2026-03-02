@@ -98,30 +98,43 @@ df_rendimiento %>% summarise(min = min(horas_sueno, na.rm = TRUE), max = max(hor
 # Basados en la regla del 1.5IQR para saber si n valores son outliers o errores
 # dentro de los datos. 
 
-# Calculo del Q3
-q3 <- quantile(df_rendimiento$horas_sueno, 0.75, na.rm = TRUE)
+# Calculo IQR
+iqr_hs = IQR(df_rendimiento$horas_sueno, na.rm = TRUE)
 
-iqr = IQR(df_rendimiento$horas_sueno, na.rm = TRUE)
+# Calculo del Q3
+q3_hs <- quantile(df_rendimiento$horas_sueno, 0.75, na.rm = TRUE)
 
 # Regla del 1.5IQR
-regla <- q3 + 1.5*iqr
-regla # 8.43285 -> Todo valor por encima es considerado un error de los datos
+limite_superior_hs <- q3_hs + 1.5*iqr_hs
+limite_superior_hs# 8.43285 -> Todo valor por encima es considerado un error de los datos
+
+# Calculo del Q1
+q1_hs <- quantile(df_rendimiento$horas_sueno, 0.25, na.rm = TRUE)
+
+limite_inferior_hs <- q1_hs - 1.5*iqr_hs
+limite_inferior_hs
+
+# Con esta regla definimos que los valores de la columna "hora_sueno" estan
+# en un rango logico de [3, 9]
 
 # -------------------------------------------------------------------------
 # Toma de decision con respecto a la IMPUTACION
 
+# Media 
+media_hs <- mean(df_rendimiento$horas_sueno, na.rm = TRUE)
+
+# Mediana
+mediana_hs <- median(df_rendimiento$horas_sueno, na.rm = TRUE)
+
 ggplot(df_rendimiento, aes(x = horas_sueno)) + geom_histogram(bins = 60, fill = "coral", color = "black") + 
-  theme_minimal() + labs(x = "Horas de sueño - h/dias", y = "Frecuencia") + scale_x_continuous(breaks = seq(0, 20, by = 1))
+  theme_minimal() + labs(x = "Horas de sueño - h/dias", y = "Frecuencia") + 
+  scale_x_continuous(breaks = seq(0, 20, by = 1)) + geom_vline(aes(xintercept = media_hs, color = "Media"), linetype = "dashed", size = 1) + 
+  geom_vline(aes(xintercept = mediana_hs, color = "Mediana"), linetype = "dotted", size = 1) + 
+  scale_color_manual(name = "Estadístico", values = c("Media" = "blue", "Mediana" = "red"))
 
 ggplot(df_rendimiento, aes(y = horas_sueno)) + geom_boxplot(fill = "pink", color = "red", width = 0.05) + 
   theme(axis.title.y = element_text(size = 15), axis.text.y = element_text(size = 15), axis.text.x = element_blank(), axis.ticks.x = element_blank()) + 
-  labs(y = "Horas de sueño - h/dia") 
-
-# Media 
-mean(df_rendimiento$horas_sueno, na.rm = TRUE)
-
-# Mediana
-median(df_rendimiento$horas_sueno, na.rm = TRUE)
+  labs(y = "Horas de sueño - h/dia")
 
 # -------------------------------------------------------------------------
 # >>>> Columna edad<<<<<
@@ -146,6 +159,25 @@ ggplot(df_rendimiento, aes(x = estres)) + geom_histogram(bins = 60, fill = "cora
 # -------------------------------------------------------------------------
 
 df_rendimiento %>% summarise(min = min(uso_redes, na.rm = TRUE), max = max(uso_redes, na.rm = TRUE))
+
+# Histograma
+
+# Toma de decision con respecto a la IMPUTACION
+
+# Media 
+media_ur <- mean(df_rendimiento$uso_redes, na.rm = TRUE)
+
+# Mediana
+mediana_ur <- median(df_rendimiento$uso_redes, na.rm = TRUE)
+
+ggplot(df_rendimiento, aes(x = uso_redes)) + geom_histogram(bins = 60, fill = "coral", color = "black") + 
+  theme_minimal() + labs(x = "Uso de redes - h/dias", y = "Frecuencia") + 
+  scale_x_continuous(breaks = seq(0, 20, by = 1)) + geom_vline(aes(xintercept = media_ur, color = "Media"), linetype = "dashed", size = 1) + 
+  geom_vline(aes(xintercept = mediana_ur, color = "Mediana"), linetype = "dotted", size = 1) + 
+  scale_color_manual(name = "Estadístico", values = c("Media" = "blue", "Mediana" = "red"))
+
+# COMO SOLUCIONAMOS CON TREMENDA COLA
+
 
 # -------------------------------------------------------------------------
 # >>>> Columna ingresos_familiares<<<<<
