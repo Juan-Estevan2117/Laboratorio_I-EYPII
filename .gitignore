@@ -6,5 +6,4 @@ data/raw/*
 !data/raw/.gitkeep
 !figuras/.gitkeep
 !scripts/Caso_2/.gitkeep
-GEMINI.md
 *.pdf

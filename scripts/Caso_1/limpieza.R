@@ -1,4 +1,6 @@
-library(mice)
+library(here)
+library(dplyr)
+library(ggplot2)
 
 df_rendimiento <- read.csv(here("data", "processed", "rendimiento_2021-2025_sem1&sem2.csv"))
 
@@ -27,10 +29,7 @@ df_rendimiento$horas_estudio[df_rendimiento$horas_estudio < 0 | df_rendimiento$h
 
 # asistencia
 
-# Como es un porcentaje, el rango estricto es [0, 100]
-# Marcamos como NAN los valores fuera de rango
-
-df_rendimiento$asistencia[df_rendimiento$asistencia < 0 | df_rendimiento$asistencia > 100] <- NA
+df_rendimiento$asistencia <- NULL
 
 # Promedio previo
 # Rango segun diccionario de variables [0, 10]
@@ -38,24 +37,21 @@ df_rendimiento$asistencia[df_rendimiento$asistencia < 0 | df_rendimiento$asisten
 df_rendimiento$promedio_previo[df_rendimiento$promedio_previo < 0 | df_rendimiento$promedio_previo > 15] <- NA
 
 # Horas de sueño
-# Basado en el EDA, concluimos que un rango logico 
-
-df_rendimiento$horas_sueno[df_rendimiento$horas_sueno < 3 | df_rendimiento$horas_sueno > 9] <- NA
+df_rendimiento$horas_sueno <- NULL
 
 # Estres
-# El rango puede plantearse en una escala de [0, 10]
-
-df_rendimiento$estres[df_rendimiento$estres < 0 | df_rendimiento$estres > 10] <- NA
+df_rendimiento$estres<- NULL
 
 # Uso de redes
 # Rango fisicamente posible [0, 24] - horas por dia
 
-df_rendimiento$uso_redes[df_rendimiento$uso_redes < 0 | df_rendimiento$uso_redes > 24] <- NA
+df_rendimiento$uso_redes <- NULL
 
 # Ingresos familiares
-# No es posible tener ingresos negativos por tanto [>0] USD/mes
+df_rendimiento$ingresos_familiares <- NULL
 
-df_rendimiento$ingresos_familiares[df_rendimiento$ingresos_familiares < 0] <- NA
+# edad
+df_rendimiento$edad <- NULL
 
 # GENERO
 # normalizamos
@@ -117,67 +113,54 @@ imp_df_rendimiento <- df_rendimiento
 imp_col_nul <- colMeans(is.na(imp_df_rendimiento)) * 100
 imp_col_nul
 
-# -------------------------------------------------------------------------
-# Ingresos familiares: Imputacion por mediana
-# -------------------------------------------------------------------------
-
-filter(df_rendimiento, is.na(ingresos_familiares))
-
-imp_df_rendimiento$ingresos_familiares[is.na(imp_df_rendimiento$ingresos_familiares)] <- 
-  median(imp_df_rendimiento$ingresos_familiares, na.rm = TRUE)
-
-# -------------------------------------------------------------------------
-# Horas de sueño: Imputacion por mediana
-# -------------------------------------------------------------------------
-
-filter(df_rendimiento, is.na(horas_sueno))
-
-imp_df_rendimiento$horas_sueno[is.na(imp_df_rendimiento$horas_sueno)] <- 
-  median(imp_df_rendimiento$horas_sueno, na.rm = TRUE)
-
-# -------------------------------------------------------------------------
-# Uso de redes: Imputacion por mediana
-# -------------------------------------------------------------------------
-
-filter(df_rendimiento, is.na(uso_redes))
-
-imp_df_rendimiento$uso_redes[is.na(imp_df_rendimiento$uso_redes)] <- 
-  median(imp_df_rendimiento$uso_redes, na.rm = TRUE)
-
-
-# -------------------------------------------------------------------------
-# Imputacion por MICE (Imputacion Multiple por ecuaciones concatenadas)
-# -------------------------------------------------------------------------
-
-# Definimos como factor TODAS las variables categoricas
-# Para que no se traten como numericas o caracteres y se aplique regresion logistica
-
-imp_df_rendimiento$anio <- as.factor(imp_df_rendimiento$anio)
-imp_df_rendimiento$semestre <- as.factor(imp_df_rendimiento$semestre)
-imp_df_rendimiento$genero <- as.factor(imp_df_rendimiento$genero)
-imp_df_rendimiento$carrera <- as.factor(imp_df_rendimiento$carrera)
-imp_df_rendimiento$acceso_internet <- as.factor(imp_df_rendimiento$acceso_internet)
-imp_df_rendimiento$trabaja <- as.factor(imp_df_rendimiento$trabaja)
-imp_df_rendimiento$modalidad <- as.factor(imp_df_rendimiento$modalidad)
-
-# creamos el objeto donde se haran las imputaciones
-imputacion <- mice(imp_df_rendimiento, m = 5, maxit = 10, method = NULL, seed = 13102005)
-
-# Verificamos que metodos de imputacion se usaron para cada columnas
-imputacion$method
-
-# Extraemos el primer dataframe creado para poder hacer analisis de varianza
-eda_df_rendimiento <- complete(imputacion, action = 1)
-
-# Exportamos el dataframe para el EDA - ANOVA
-write.csv(eda_df_rendimiento, file = here("data", "processed", "rendimiento_imputado.csv"), row.names = FALSE)
 
 # Revision de los graficos para validar que los datos imputados si se hayan
 # adaptado a los datos originales opservados
 
-stripplot(imputacion, pch = 20, cex = 1.2)
+# imputamos promedio previo con la mediana
+imp_df_rendimiento$promedio_previo[is.na(imp_df_rendimiento$promedio_previo)] <- 
+  median(imp_df_rendimiento$promedio_previo, na.rm = TRUE)
 
-densityplot(imputacion)
+# impoutamos horas de estudio con la mediana
+imp_df_rendimiento$horas_estudio[is.na(imp_df_rendimiento$horas_estudio)] <- 
+  median(imp_df_rendimiento$horas_estudio, na.rm = TRUE)
 
-# Guardar objeto para usarlo en el otro archivo
-saveRDS(imputacion, "imputacion.rds")
+# imputamos carrera con la moda estadística ("negocios" era la más frecuente)
+
+imp_df_rendimiento$carrera[is.na(imp_df_rendimiento$carrera)] <- "negocios"
+
+write.csv(imp_df_rendimiento, file = here("data", "processed", "rendimiento_imputado.csv"), row.names = FALSE)
+
+
+# Crear dataframes auxiliares para graficar con ggplot de forma muy sencilla
+# Tomamos la columna original (con NAs)
+df_original_horas <- data.frame(valor = df_rendimiento$horas_estudio, 
+                                estado = "1. Original (Con NAs)")
+
+# Tomamos la columna imputada (sin NAs, rellenada con mediana)
+df_imputado_horas <- data.frame(valor = imp_df_rendimiento$horas_estudio, 
+                                estado = "2. Imputado (Mediana)")
+
+# Unimos ambos dataframes uno debajo del otro usando rbind
+df_grafico_horas <- rbind(df_original_horas, df_imputado_horas)
+
+
+# Usamos un grafico de densidad que es muy visual para comparar distribuciones
+ggplot(df_grafico_horas, aes(x = valor, fill = estado)) +
+  geom_density(alpha = 0.5) +  # Alpha hace que los colores sean semi-transparentes
+  theme_minimal() + labs(x = "Horas de Estudio", y = "Densidad") + 
+  scale_fill_manual(values = c("1. Original (Con NAs)" = "#e74c3c", "2. Imputado (Mediana)" = "#2ecc71"))
+
+# Mismo proceso para promedio previo
+df_original_promedio <- data.frame(valor = df_rendimiento$promedio_previo, 
+                                   estado = "1. Original (Con NAs)")
+
+df_imputado_promedio <- data.frame(valor = imp_df_rendimiento$promedio_previo, 
+                                   estado = "2. Imputado (Mediana)")
+
+df_grafico_promedio <- rbind(df_original_promedio, df_imputado_promedio)
+
+# grafico de densidad para promedio previo
+ggplot(df_grafico_promedio, aes(x = valor, fill = estado)) + 
+  geom_density(alpha = 0.5) + theme_minimal() +
+  labs(x = "Promedio Previo", y = "Densidad") + scale_fill_manual(values = c("1. Original (Con NAs)" = "#e74c3c", "2. Imputado (Mediana)" = "#3498db"))

@@ -69,7 +69,7 @@ sum(is.na(df_rendimiento$asistencia))
 # >>>> Columna promedio_previo<<<<<
 # -------------------------------------------------------------------------
 
-# Como no queda clara la escala (Ya que pusiste ejemplo de 0 a 10 de forma arbitraria)
+# Como no queda clara la escala
 df_rendimiento %>% summarise(min = min(promedio_previo, na.rm = TRUE), max = max(promedio_previo, na.rm = TRUE))
 
 # quisimos ver la distribucion de los datos con un histograma
@@ -143,6 +143,7 @@ ggplot(df_rendimiento, aes(y = horas_sueno)) + geom_boxplot(fill = "pink", color
 # Aunque sea raro, es un rango teoricamente posible 
 df_rendimiento %>% summarise(min = min(edad, na.rm = TRUE), max = max(edad, na.rm = TRUE))
 
+
 # -------------------------------------------------------------------------
 # >>>> Columna estres<<<<<
 # -------------------------------------------------------------------------
@@ -172,11 +173,9 @@ mediana_ur <- median(df_rendimiento$uso_redes, na.rm = TRUE)
 
 ggplot(df_rendimiento, aes(x = uso_redes)) + geom_histogram(bins = 60, fill = "coral", color = "black") + 
   theme_minimal() + labs(x = "Uso de redes - h/dias", y = "Frecuencia") + 
-  scale_x_continuous(breaks = seq(0, 20, by = 1)) + geom_vline(aes(xintercept = media_ur, color = "Media"), linetype = "dashed", size = 1) + 
+  scale_x_continuous(breaks = seq(0,24 , by = 4)) + geom_vline(aes(xintercept = media_ur, color = "Media"), linetype = "dashed", size = 1) + 
   geom_vline(aes(xintercept = mediana_ur, color = "Mediana"), linetype = "dotted", size = 1) + 
   scale_color_manual(name = "Estadístico", values = c("Media" = "blue", "Mediana" = "red"))
-
-# COMO SOLUCIONAMOS CON TREMENDA COLA
 
 
 # -------------------------------------------------------------------------
@@ -245,3 +244,33 @@ vis_miss(df_rendimiento) + theme(axis.text.x = element_text(angle = 45, hjust = 
 
 # Y esta nos da una visualizacion más clara
 gg_miss_var(df_rendimiento, show_pct = TRUE) + theme_bw() + labs(y = "% Porcentaje por variable")
+
+# Test de correlaciones pre-limpieza
+df_num <- df_rendimiento%>% select(puntaje_final, horas_estudio, asistencia, promedio_previo,
+                                   horas_sueno, edad, estres, uso_redes, ingresos_familiares) 
+
+cor.test(df_num$horas_estudio, df_num$puntaje_final) #XHoras estudio vs puntaje final
+cor.test(df_num$asistencia, df_num$puntaje_final) #XAsistencia vs puntaje final
+cor.test(df_num$promedio_previo, df_num$puntaje_final) #Promedio previo vs puntaje final
+cor.test(df_num$horas_sueno, df_num$puntaje_final) #Horas de sueño vs puntaje final
+cor.test(df_num$edad, df_num$puntaje_final) #Edad vs puntaje final
+cor.test(df_num$estres, df_num$puntaje_final) #Estrés  vs puntaje final
+cor.test(df_num$uso_redes, df_num$puntaje_final) #XUso de redes  vs puntaje final
+
+# verificacion con diagramas de dispercion
+
+qplot(horas_estudio, puntaje_final, data = df_rendimiento) #Relación observable 
+qplot(asistencia, puntaje_final, data = df_rendimiento) # No
+qplot(promedio_previo, puntaje_final, data = df_rendimiento) #Relación observable
+qplot(horas_sueno, puntaje_final, data = df_rendimiento) #No
+qplot(edad, puntaje_final, data = df_rendimiento) #No
+qplot(estres, puntaje_final, data = df_rendimiento) #No
+qplot(uso_redes, puntaje_final, data = df_rendimiento) #No 
+
+#Nos quedamos con las variables más significativas: horas_estudio, promedio_previo 
+#y hacemos prueba de correlación entre ellas 2
+
+cor.test(df_num$horas_estudio, df_num$promedio_previo) #XHoras estudio vs promedio_previo
+
+corrplot(cor(df_num, use="complete.obs"), method="color", type="lower", addCoef.col="black", 
+         tl.cex=0.8, number.cex=0.6)

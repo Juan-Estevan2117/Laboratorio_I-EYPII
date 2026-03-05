@@ -1,297 +1,139 @@
 library(corrplot)
 library(gtsummary)
-# -------------------------------------------------------------------------
-# ANOVA
-# -------------------------------------------------------------------------
+library(here)
+library(lmtest)
+library(car)
 
 # Cargamos los datos imputados
 df_anova_rendimiento <- read.csv(here("data", "processed", "rendimiento_imputado.csv"))
 
-# -------------------------------------------------------------------------
-# CAMBIANDO LAS CATEGORICAS A FACTORES
-# -------------------------------------------------------------------------
-df_anova_rendimiento$anio <- as.factor(df_anova_rendimiento$anio)
-df_anova_rendimiento$semestre <- as.factor(df_anova_rendimiento$semestre)
-df_anova_rendimiento$genero <- as.factor(df_anova_rendimiento$genero)
-df_anova_rendimiento$carrera <- as.factor(df_anova_rendimiento$carrera)
-df_anova_rendimiento$acceso_internet <- as.factor(df_anova_rendimiento$acceso_internet)
-df_anova_rendimiento$trabaja <- as.factor(df_anova_rendimiento$trabaja)
-df_anova_rendimiento$modalidad <- as.factor(df_anova_rendimiento$modalidad)
+summary(df_anova_rendimiento)
+
+str(df_anova_rendimiento)
+
+# Dicotomizando la variable carrera
+# Como 'carrera' tiene 4 categorías, crearemos 4 columnas nuevas llenas de ceros.
+# Luego, si la fila pertenece a esa carrera, le ponemos un 1.
+
+# inicializamos las columnas en 0
+df_anova_rendimiento$carrera_negocios <- 0
+df_anova_rendimiento$carrera_datos <- 0
+df_anova_rendimiento$carrera_ingenieria <- 0
+df_anova_rendimiento$carrera_cs <- 0  # Ciencias de la Computación
+
+# Paso 2: Asignar un 1 donde corresponda usando ifelse
+df_anova_rendimiento$carrera_negocios <- ifelse(df_anova_rendimiento$carrera == "negocios", 1, 0)
+df_anova_rendimiento$carrera_datos <- ifelse(df_anova_rendimiento$carrera == "datos", 1, 0)
+df_anova_rendimiento$carrera_ingenieria <- ifelse(df_anova_rendimiento$carrera == "ingenieria", 1, 0)
+df_anova_rendimiento$carrera_cs <- ifelse(df_anova_rendimiento$carrera == "ciencias de la computacion", 1, 0)
+
+# Verificamos que haya quedado bien
+head(df_anova_rendimiento[, c("carrera", "carrera_negocios", "carrera_datos", "carrera_ingenieria", "carrera_cs")])
+
+# Creación de Interacciones Estadísticas
+
+# Interacciones con Horas de Estudio
+df_anova_rendimiento$inter_horas_datos <- df_anova_rendimiento$horas_estudio * df_anova_rendimiento$carrera_datos
+df_anova_rendimiento$inter_horas_ing <- df_anova_rendimiento$horas_estudio * df_anova_rendimiento$carrera_ingenieria
+df_anova_rendimiento$inter_horas_cs <- df_anova_rendimiento$horas_estudio * df_anova_rendimiento$carrera_cs
+
+# Interacciones con Promedio Previo
+df_anova_rendimiento$inter_prom_datos <- df_anova_rendimiento$promedio_previo * df_anova_rendimiento$carrera_datos
+df_anova_rendimiento$inter_prom_ing <- df_anova_rendimiento$promedio_previo * df_anova_rendimiento$carrera_ingenieria
+df_anova_rendimiento$inter_prom_cs <- df_anova_rendimiento$promedio_previo * df_anova_rendimiento$carrera_cs
+
 
 # -------------------------------------------------------------------------
-
-# matriz de correlacion 
-
-# diagrama de dispercion con las variables con mayor correlacion en la matriz
-
-# Seleccionamos las variables cuantitativas
-num_df_AR <- df_anova_rendimiento %>% select(puntaje_final, horas_estudio, 
-                                             asistencia, horas_sueno, 
-                                             promedio_previo, edad, estres, 
-                                             uso_redes, ingresos_familiares)
-
-cor_df <- cor(num_df_AR)
-corrplot(cor_df, method = "number", type = "lower")
-
-# Interaccion entre variables categoricas
-
-# Modelo de prueba solo con variables numericas
-modelo_1 <- lm(puntaje_final ~ horas_estudio + asistencia +promedio_previo + 
-               horas_sueno + edad + estres + uso_redes + ingresos_familiares,
-               data = num_df_AR)
-
-options(scipen = 999) # Elimina la notacion cientifica
-summary(modelo_1)
-
-# -------------------------------------------------------------------------
-# Ya que vimos las variables que si aportan, ahora realizaremos la interaccion
-# Con las variables categoricas. 
-# Verificamos con scatterplot donde vemos la dispercion entre puntaje final
-# y una variable significativa (o una variable de nuestro interes)
-# graficamos la recta de regresion con una de las variables categoricas
-# y si se cruzan tenemos una interaccion entre las variables
+# Interaccion con las variables dicotomicas
 # -------------------------------------------------------------------------
 
-# Scatterplot: ASISTENCIA VS MODALIDAD: Si hay
-# Sospechamos que las personas en alguna de las 2 modalidades asisten mas a 
-# clases que otras. Ademas Asistencia fue significativa en "modelo_1"
+# Interacciones con trabaja (1 = si, 0 = no)
+df_anova_rendimiento$inter_horas_trabaja <- df_anova_rendimiento$horas_estudio * df_anova_rendimiento$trabaja
+df_anova_rendimiento$inter_prom_trabaja <- df_anova_rendimiento$promedio_previo * df_anova_rendimiento$trabaja
 
-ggplot(df_anova_rendimiento, aes(x = asistencia, y = puntaje_final, color = as.factor(modalidad))) +
-  geom_point(alpha = 0.5) +
-  geom_smooth(method = "lm", se = FALSE) +  # Traza las líneas de regresión
-  theme_minimal()
+# Interacciones con modalidad (1 = presencial, 0 = virtual)
+df_anova_rendimiento$inter_horas_modalidad <- df_anova_rendimiento$horas_estudio * df_anova_rendimiento$modalidad
+df_anova_rendimiento$inter_prom_modalidad <- df_anova_rendimiento$promedio_previo * df_anova_rendimiento$modalidad
 
-# Scatterplot: ASISTENCIA VS TRABAJA: Si hay
-# La asistencia de los estudiantes podria verse afectada si trabajan o no
+# Interacciones con acceso_internet (1 = si, 0 = no)
+df_anova_rendimiento$inter_horas_internet <- df_anova_rendimiento$horas_estudio * df_anova_rendimiento$acceso_internet
 
-ggplot(df_anova_rendimiento, aes(x = asistencia, y = puntaje_final, color = as.factor(trabaja))) +
-  geom_point(alpha = 0.5) +
-  geom_smooth(method = "lm", se = FALSE) +  # Traza las líneas de regresión
-  theme_minimal()
+# Interacciones con genero (1 = female, 0 = male)
+df_anova_rendimiento$inter_horas_genero <- df_anova_rendimiento$horas_estudio * df_anova_rendimiento$genero
 
-# Scatterplot: PROMEDIO PREVIO VS MODALIDAD : No hay
-# Sospechamos que la modalidad podria influir en el promedio previo de los
-# estudiantes. Ademas promedio previo fue significativo en el modelo_1
 
-ggplot(df_anova_rendimiento, aes(x = promedio_previo, y = puntaje_final, color = as.factor(modalidad))) +
-  geom_point(alpha = 0.5) +
-  geom_smooth(method = "lm", se = FALSE) +  # Traza las líneas de regresión
-  theme_minimal()
+# Solo modalidad sale como significativa teniendo en cuenta un al alpha de 0.05
+modelo <- lm(puntaje_final ~ horas_estudio + promedio_previo + 
+    carrera_datos + carrera_ingenieria + carrera_cs + trabaja + modalidad + 
+    acceso_internet + genero + semestre + inter_horas_datos + inter_horas_ing + 
+    inter_horas_cs + inter_prom_datos + inter_prom_ing + inter_prom_cs + inter_horas_trabaja + 
+    inter_prom_trabaja + inter_horas_modalidad + inter_prom_modalidad + inter_horas_internet + 
+    inter_horas_genero, data = df_anova_rendimiento)
 
-# Scatterplot: PROMEDIO PREVIO VS ACCESO A INTERNET: Si hay
-# Pensamos que si un estudiante no tenia acceso a internet, su promedio se podria
-# ver perjudicado
+summary(modelo)
 
-ggplot(df_anova_rendimiento, aes(x = promedio_previo, y = puntaje_final, color = as.factor(acceso_internet))) +
-  geom_point(alpha = 0.5) +
-  geom_smooth(method = "lm", se = FALSE) +  # Traza las líneas de regresión
-  theme_minimal()
+# montamos el modelo solo con las significativas
+modelo_simplificado <- lm(puntaje_final ~ horas_estudio + promedio_previo + 
+                            modalidad, data = df_anova_rendimiento)
 
-# Scatterplot: ESTRES VS GENERO: Si hay
-# Sospechamos que el estres podria ser percibido de distinta forma por el genero.
-# Ademas estres fue significativa en el modelo_1
+summary(modelo_simplificado)
 
-ggplot(df_anova_rendimiento, aes(x = estres, y = puntaje_final, color = as.factor(genero))) +
-  geom_point(alpha = 0.5) +
-  geom_smooth(method = "lm", se = FALSE) +  # Traza las líneas de regresión
-  theme_minimal()
+# Validacion de supuestos
 
-# Scatterplot: ESTRES VS TRABAJA: Si hay
-# Sospechabamos que el estres podria verse afectado en si trabaja o no
+# Extraer los residuales
 
-ggplot(df_anova_rendimiento, aes(x = estres, y = puntaje_final, color = as.factor(trabaja))) +
-  geom_point(alpha = 0.5) +
-  geom_smooth(method = "lm", se = FALSE) +  # Traza las líneas de regresión
-  theme_minimal()
+error = modelo_simplificado$residuals
 
-# Scatterplot: ESTRES VS MODALIDAD: Si hay
-# Sospechamos que una modalidad podia afectar los niveles de estres mas que otra
+# Linealidad:  mediante el grafico de residuos vs valores ajustados
 
-ggplot(df_anova_rendimiento, aes(x = estres, y = puntaje_final, color = as.factor(modalidad))) +
-  geom_point(alpha = 0.5) +
-  geom_smooth(method = "lm", se = FALSE) +  # Traza las líneas de regresión
-  theme_minimal()
+plot(modelo_simplificado$fitted.values, error, pch = 19)
+abline(h = 0, col = "red", lwd = 2, lty = 2)
 
-# Scatterplot: HORAS DE ESTUDIO VS GENERO: Si hay
-# Sospechamos que uno de los generos estudiaba mas que otro. Ademas de que 
-# Horas de estudio fue significativa
+# verificamos con prueba t-student
+t.test(error) # como p-value es = 1 se cumple el supuesto
 
-ggplot(df_anova_rendimiento, aes(x = horas_estudio, y = puntaje_final, color = as.factor(genero))) +
-  geom_point(alpha = 0.5) +
-  geom_smooth(method = "lm", se = FALSE) +  # Traza las líneas de regresión
-  theme_minimal()
+# Normalidad: Test de Shapiro-Wilk
+shapiro.test(error) 
 
-# Scatterplot: HORAS DE ESTUDIO VS MODALIDAD: No hay
-# Sospechamos que los estudiantes en alguna modalidad podian estudiar mas que 
-# en la otra
+# Homocedasticidad - varianza constante: No se cumple el supuesto
+s
+bptest(modelo_simplificado)
 
-ggplot(df_anova_rendimiento, aes(x = horas_estudio, y = puntaje_final, color = as.factor(modalidad))) +
-  geom_point(alpha = 0.5) +
-  geom_smooth(method = "lm", se = FALSE) +  # Traza las líneas de regresión
-  theme_minimal()
+# Multicolinealidad: Se evalúa mediante el Factor de Inflación de Varianza (VIF):
+vif(modelo_simplificado) # Como VIF < 10 no tenemos problemas de multicolinealidad
 
-# Scatterplot: HORAS DE ESTUDIO VS TRABAJA: Si hay
-# Pensamos que si algun estudiante trabaja sus horas de estudio se ven afectadas
-
-ggplot(df_anova_rendimiento, aes(x = horas_estudio, y = puntaje_final, color = as.factor(trabaja))) +
-  geom_point(alpha = 0.5) +
-  geom_smooth(method = "lm", se = FALSE) +  # Traza las líneas de regresión
-  theme_minimal()
-
-# Scatterplot: ESTRES VS SEMESTRE: Si hay
-# Sospechamos que los estudiantes de la primera mitad del año pueden tener menos
-# estres que los de segunda mitad
-
-ggplot(df_anova_rendimiento, aes(x = estres, y = puntaje_final, color = as.factor(semestre))) +
-  geom_point(alpha = 0.5) +
-  geom_smooth(method = "lm", se = FALSE) +  # Traza las líneas de regresión
-  theme_minimal()
-
-# Scatterplot: ASISTENCIA VS SEMESTRE: Si hay
-# Pensamos que la asistencia podia fluctuar dependiendo del semestre
-
-ggplot(df_anova_rendimiento, aes(x = asistencia, y = puntaje_final, color = as.factor(semestre))) +
-  geom_point(alpha = 0.5) +
-  geom_smooth(method = "lm", se = FALSE) +  # Traza las líneas de regresión
-  theme_minimal()
+# Metricas de rendimiento
 
 # -------------------------------------------------------------------------
-# MODELO CON LAS INTERACCIONES DICOTOMICAS
-# -------------------------------------------------------------------------
 
-# Definimos las interacciones
-interaccion_asistenciavsmodalidad = df_anova_rendimiento$asistencia * df_anova_rendimiento$modalidad
-interaccion_asistenciavstrabaja = df_anova_rendimiento$asistencia * df_anova_rendimiento$trabaja
-interaccion_promediopreviovsmodalidad = df_anova_rendimiento$promedio_previo * df_anova_rendimiento$modalidad
-interaccion_promediopreviovsaccesointernet = df_anova_rendimiento$promedio_previo * df_anova_rendimiento$acceso_internet
-interaccion_estresvsgenero = df_anova_rendimiento$estres * df_anova_rendimiento$genero
-interaccion_estresvstrabajo = df_anova_rendimiento$estres * df_anova_rendimiento$trabaja
-interaccion_estresvsmodalidad = df_anova_rendimiento$estres * df_anova_rendimiento$modalidad
-interaccion_horasestudiovstrabaja = df_anova_rendimiento$horas_estudio * df_anova_rendimiento$trabaja
-interaccion_estresvssemestre = df_anova_rendimiento$estres * df_anova_rendimiento$semestre
-interaccion_asistenciavssemestre = df_anova_rendimiento$asistencia * df_anova_rendimiento$semestre
+ECM = function(y_observado, y_ajustado){
+  
+  r = sum((y_observado - y_ajustado)^2)/length((y_observado))
+  return(r)
+}
 
-# La añadimos al dataframe
-df_anova_rendimiento$interaccion_asistenciavsmodalidad = interaccion_asistenciavsmodalidad
-df_anova_rendimiento$interaccion_asistenciavstrabaja = interaccion_asistenciavstrabaja
-df_anova_rendimiento$interaccion_promediopreviovsmodalidad = interaccion_promediopreviovsmodalidad
-df_anova_rendimiento$interaccion_promediopreviovsaccesointernet = interaccion_promediopreviovsaccesointernet
-df_anova_rendimiento$interaccion_estresvsgenero = interaccion_estresvsgenero
-df_anova_rendimiento$interaccion_estresvstrabajo = interaccion_estresvstrabajo
-df_anova_rendimiento$interaccion_estresvsmodalidad = interaccion_estresvsmodalidad
-df_anova_rendimiento$interaccion_horasestudiovstrabaja = interaccion_horasestudiovstrabaja
-df_anova_rendimiento$interaccion_estresvssemestre = interaccion_estresvssemestre
-df_anova_rendimiento$interaccion_asistenciavssemestre = interaccion_asistenciavssemestre
-
-# Modelo 2: con las variables dicotomicas
-
-modelo_2 = lm(puntaje_final ~ horas_estudio + asistencia + promedio_previo + 
-                estres + interaccion_asistenciavsmodalidad + 
-                interaccion_asistenciavstrabaja + 
-                interaccion_promediopreviovsmodalidad + 
-                interaccion_promediopreviovsaccesointernet + 
-                interaccion_estresvsgenero + interaccion_estresvstrabajo + 
-                interaccion_estresvsmodalidad + interaccion_horasestudiovstrabaja + 
-                interaccion_estresvssemestre + interaccion_asistenciavssemestre, 
-              data = df_anova_rendimiento)
-
-modelo_2_test = lm(puntaje_final ~ horas_estudio + asistencia + promedio_previo + 
-                estres + (asistencia * modalidad) + (asistencia * trabaja) + (promedio_previo * modalidad) +
-                (promedio_previo * acceso_internet) + (estres * genero) + 
-                (estres*trabaja) + (estres*modalidad) + (horas_estudio * trabaja) + 
-                (estres * semestre) + (asistencia*semestre), data = df_anova_rendimiento)
-
-summary(modelo_2)
-summary(modelo_2_test)
+ECM(df_anova_rendimiento$puntaje_final, modelo$fitted.values)
 
 # -------------------------------------------------------------------------
-# Variables politomicas
-# -------------------------------------------------------------------------
 
-# Implementaremos la misma logica que usamos para las dicotomicas, usando las
-# variables que sospechemos puedan tener inflluencia por la categoria
+EAM = function(y_observado, y_ajustado){
+  
+  r = sum(abs(y_observado - y_ajustado))/length((y_observado))
+  return(r)
+}
 
-# HORAS DE ESTUDIO VS CARRERA: Si hay
-ggplot(df_anova_rendimiento, aes(x = horas_estudio, y = puntaje_final, color = as.factor(carrera))) +
-  geom_point(alpha = 0.5) +
-  geom_smooth(method = "lm", se = FALSE) +  # Traza las líneas de regresión
-  theme_minimal()
-
-# ESTRES VS CARRERA: Si hay
-ggplot(df_anova_rendimiento, aes(x = estres, y = puntaje_final, color = as.factor(carrera))) +
-  geom_point(alpha = 0.5) +
-  geom_smooth(method = "lm", se = FALSE) +  # Traza las líneas de regresión
-  theme_minimal()
-
-# PROMEDIO PREVIO VS CARRERA: No hay
-ggplot(df_anova_rendimiento, aes(x = promedio_previo, y = puntaje_final, color = as.factor(carrera))) +
-  geom_point(alpha = 0.5) +
-  geom_smooth(method = "lm", se = FALSE) +  # Traza las líneas de regresión
-  theme_minimal()
-
-# USO REDES VS CARRERA: Si hay
-ggplot(df_anova_rendimiento, aes(x = uso_redes, y = puntaje_final, color = as.factor(carrera))) +
-  geom_point(alpha = 0.5) +
-  geom_smooth(method = "lm", se = FALSE) +  # Traza las líneas de regresión
-  theme_minimal()
-
-# ASISTENCIA VS CARRERA: Si hay
-ggplot(df_anova_rendimiento, aes(x = asistencia, y = puntaje_final, color = as.factor(carrera))) +
-  geom_point(alpha = 0.5) +
-  geom_smooth(method = "lm", se = FALSE) +  # Traza las líneas de regresión
-  theme_minimal()
-
-# PROMEDIO PREVIO VS AÑO: Si hay
-ggplot(df_anova_rendimiento, aes(x = promedio_previo, y = puntaje_final, color = as.factor(anio))) +
-  geom_point(alpha = 0.5) +
-  geom_smooth(method = "lm", se = FALSE) +  # Traza las líneas de regresión
-  theme_minimal()
-
-# HORAS_ESTUDIO VS AÑO: Si hay
-ggplot(df_anova_rendimiento, aes(x = horas_estudio, y = puntaje_final, color = as.factor(anio))) +
-  geom_point(alpha = 0.5) +
-  geom_smooth(method = "lm", se = FALSE) +  # Traza las líneas de regresión
-  theme_minimal()
-
-# ESTRES VS AÑO: Si hay
-ggplot(df_anova_rendimiento, aes(x = estres, y = puntaje_final, color = as.factor(anio))) +
-  geom_point(alpha = 0.5) +
-  geom_smooth(method = "lm", se = FALSE) +  # Traza las líneas de regresión
-  theme_minimal()
-
-# ASISTENCIA VS AÑO: Si hay
-ggplot(df_anova_rendimiento, aes(x = asistencia, y = puntaje_final, color = as.factor(anio))) +
-  geom_point(alpha = 0.5) +
-  geom_smooth(method = "lm", se = FALSE) +  # Traza las líneas de regresión
-  theme_minimal()
+EAM(df_anova_rendimiento$puntaje_final, modelo$fitted.values)
 
 # -------------------------------------------------------------------------
-# MODELO CON LAS INTERACCIONES POLITOMICAS
-# -------------------------------------------------------------------------
 
-modelo_3 = lm(puntaje_final ~ horas_estudio + asistencia + promedio_previo + 
-                estres + (horas_estudio * carrera) + (estres * carrera)+ 
-                (uso_redes * carrera) + (asistencia * carrera) + 
-                (promedio_previo * anio) + (horas_estudio * anio) + 
-                (estres * anio) + (asistencia * anio), data = df_anova_rendimiento)
+MAPE = function(y_observado, y_ajustado, porcentaje){
+  
+  if (porcentaje < 0 | porcentaje > 1 ) {
+    return("Error! el valor del porcentaje debe estar entre 0 y 1")
+  }
+  r = (porcentaje/length(y_observado))*sum(abs((y_observado - y_ajustado)/y_observado))
+  return(r)
+}
 
-summary(modelo_3)
-
-# -------------------------------------------------------------------------
-# Modelo con todas las interacciones
-# -------------------------------------------------------------------------
-
-# Traemos el objeto de imputacion del otro archivo
-imputacion <- readRDS("imputacion.rds")
-
-modelo_final <- with(imputacion, lm(puntaje_final ~ horas_estudio + asistencia + 
-                                    promedio_previo + estres + (asistencia * modalidad) +
-                                    (horas_estudio * trabaja) + (horas_estudio * anio) +
-                                    (horas_estudio * carrera)))
-
-# Agrupamos los resultados
-resultado <- pool(modelo_final)
-options(scipen = 0)
-summary(resultado)
-
+MAPE(df_anova_rendimiento$puntaje_final, modelo$fitted.values, 1)
 
