@@ -70,9 +70,27 @@ ggplot(df_espumas, aes(x = respuesta, y = peor_contraste, fill = respuesta)) +
 # pero se desplazan a la derecha por asimetria en la rugosidad, fallan por textura.
 # Y hay espumas No conformes que aunque no terminan de ser lisas por completo, fallan 
 # por rumputaras o variaciones fuertes en la razon de sus areas.
+
+# Se detecta que se puede predecir muy bien que espumas saldran como conformes o
+# no conformes. Esto nos indica un fenomeno de separacion completa
 ggplot(df_espumas, aes(x = peor_rugosidad, y = razon_area, color = as.factor(respuesta))) + 
   geom_point(alpha = 0.7, size = 2) + scale_y_log10() +  theme_minimal() +
   labs(x = "Peor Rugosidad Superficial (Defecto de Textura)", y = "Asimetría de Área (Defecto Estructural) - Escala Log") +
   scale_color_manual(name = "Categoría", values = c("0" = "#e74c3c", "1" = "#2ecc71"), 
                      labels = c("0" = "No Conforme", "1" = "Conforme")) +
   theme(legend.position = "bottom")
+
+ggplot(df_espumas, aes(x = b, y = razon_area, color = as.factor(respuesta))) + 
+  geom_point(alpha = 0.7, size = 2) + scale_y_log10() +  theme_minimal() +
+  labs(x = "Peor Rugosidad Superficial (Defecto de Textura)", y = "Asimetría de Área (Defecto Estructural) - Escala Log") +
+  scale_color_manual(name = "Categoría", values = c("0" = "#e74c3c", "1" = "#2ecc71"), 
+                     labels = c("0" = "No Conforme", "1" = "Conforme")) +
+  theme(legend.position = "bottom")
+
+# prueba de multicolinealidad
+cor.test(df_espumas$razon_area, df_espumas$peor_rugosidad)
+cor.test(df_espumas$rango_brillo, df_espumas$peor_contraste)
+cor.test(df_espumas$razon_area, df_espumas$rango_brillo)
+cor.test(df_espumas$rango_brillo, df_espumas$peor_contraste)
+
+# 
