@@ -58,5 +58,3 @@ variacion_color_verde
 # del flujo que necesitamos para la organizacion de los datos.
 
 # Adaptar una funcion que haga esto para todas las imagenes
-
-
