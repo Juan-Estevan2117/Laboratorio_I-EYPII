@@ -1,5 +1,6 @@
 library(here)
 library(png)
+library(ggplot2)
 
 # Funcion de extraccion de caracteristicas
 extraer_caracteristicas <- function(ruta_imagen) {

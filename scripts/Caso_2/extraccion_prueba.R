@@ -38,7 +38,7 @@ brillo_medio
 contraste_global <- sd(int_gris)
 contraste_global
 
-# Area del objeto: sumamos  los suma de los elementos de la matriz de segmentacion
+# Area del objeto: es la suma de los elementos de la matriz de segmentacion
 # binaria
 area_objeto <- sum(seg_bin)
 area_objeto
